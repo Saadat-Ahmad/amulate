@@ -8,9 +8,9 @@ import { useTheme } from "next-themes"
 
 const navItems = [
   { name: "Home", href: "/" },
-  { name: "Workflows", href: "#workflows" },
-  { name: "Solutions", href: "#solutions" },
-  { name: "Team", href: "#team" },
+  { name: "Workflows", href: "/workflows" },
+  { name: "Dynamic Pricing", href: "/dynamicPricing" },
+  { name: "ERP Assistant", href: "/erpAssist" },
 ]
 
 export default function Navbar() {
