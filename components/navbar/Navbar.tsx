@@ -63,12 +63,7 @@ export default function Navbar() {
                 >
                   {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </Button>
-                
-                <a href="/cvSaadatAhmad.pdf" download>
-                  <button className="text-base font-medium hover:text-primary transition-colors">
-                    Resume
-                  </button>
-                </a>
+                             
                 {navItems.map((item) => (
                   <Link
                     key={item.name}

@@ -11,14 +11,6 @@ import Footer from "@/components/footer/footer"
 import { InteractiveGridPattern } from "@/components/ui/shadcn-io/interactive-grid-pattern"
 
 export default function HomePage() {
-  const email = "s.saadat.ahmad@gmail.com"
-  const [copied, setCopied] = useState(false)
-
-  const copyEmail = () => {
-    navigator.clipboard.writeText(email)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   const redirectBilling = () => {
     location.href = "#solutions"
@@ -94,7 +86,7 @@ const developers = [
 
       {/* Introduction */}
       <section className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-        <Link href={"https://www.linkedin.com/in/syedsaadatahmad/"}>
+        <Link href={"/"}>
         <Image
           src="/logo.png"
           alt="logo"
