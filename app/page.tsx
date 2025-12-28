@@ -51,7 +51,7 @@ const developers = [
       title: "Syed Saadat Ahmad",
       image: "/Saadat.jpg",
       line: "Full Stack Developer",
-      description: "Development of the full stack application of autoTrader and handling cron jobs and user database.",
+      description: "Development of the full stack application and handling cron jobs and user database.",
       link: "https://www.linkedin.com/in/syedsaadatahmad/",
     }
   ]
