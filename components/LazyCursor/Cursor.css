@@ -1,0 +1,54 @@
+.cursor,
+.cursor-follower {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.cursor {
+  width: 10px;
+  height: 10px;
+  background-color: #df7009;
+  border-radius: 50%;
+  z-index: 1000;
+  transition: transform 0.05s ease-out;
+}
+
+.cursor-follower {
+  visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+
+@media only screen and (max-width: 1024px) {
+  .cursor,
+  .cursor-follower {
+    visibility: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+  }
+
+  .cursor {
+    width: 10px;
+    height: 10px;
+    background-color: #e0615d;
+    border-radius: 50%;
+    z-index: 1000;
+    transition: transform 0.05s ease-out;
+  }
+
+  .cursor-follower {
+    width: 60px;
+    height: 60px;
+    background-color: #e0615d;
+    opacity: 20%;
+    border-radius: 50%;
+    z-index: 999;
+  }
+}
