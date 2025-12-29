@@ -1,0 +1,328 @@
+.map-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.map-page .page-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.map-legend {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legend-dot.active {
+  background: #10b981;
+}
+
+.legend-dot.pending {
+  background: #f59e0b;
+}
+
+.legend-dot.transit {
+  background: #667eea;
+}
+
+.map-container-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  height: calc(100vh - 180px);
+}
+
+.map-view {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+.map-placeholder {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.map-background {
+  width: 100%;
+  height: 100%;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><rect fill="%23f0f4ff" width="1200" height="800"/><path fill="%23e0e7ff" d="M0 400 Q300 350 600 400 T1200 400 L1200 800 L0 800 Z"/></svg>') center/cover;
+  position: relative;
+}
+
+.supplier-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s;
+}
+
+.supplier-marker.active {
+  color: #10b981;
+}
+
+.supplier-marker.pending {
+  color: #f59e0b;
+}
+
+.supplier-marker:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.marker-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin-top: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.supplier-marker:hover .marker-label {
+  opacity: 1;
+}
+
+.routes-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.route-line {
+  animation: dash 2s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.map-info-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: white;
+  z-index: 5;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2rem;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.map-info-overlay h3 {
+  margin: 1rem 0 0.5rem 0;
+}
+
+.map-info-overlay p {
+  margin: 0 0 0.5rem 0;
+}
+
+.map-info-overlay small {
+  opacity: 0.8;
+  font-size: 0.85rem;
+}
+
+.map-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+}
+
+.supplier-details,
+.supplier-list,
+.shipments-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.supplier-details h3,
+.supplier-list h3,
+.shipments-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detail-card {
+  background: #f7fafc;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.detail-card h4 {
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.supplier-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  background: #f7fafc;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.supplier-item:hover {
+  background: #e2e8f0;
+  transform: translateX(4px);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.active {
+  background: #10b981;
+}
+
+.status-dot.pending {
+  background: #f59e0b;
+}
+
+.supplier-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.supplier-item-info strong {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.supplier-item-info span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.order-count {
+  background: var(--primary);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.shipment-item {
+  padding: 1rem;
+  background: #f7fafc;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.shipment-route {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.route-arrow {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.shipment-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-badge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.in_transit {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.eta {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1200px) {
+  .map-container-wrapper {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  
+  .map-view {
+    height: 500px;
+  }
+}
