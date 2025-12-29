@@ -54,19 +54,19 @@ class ReactiveAgent:
                 'action_required': f"Reorder immediately. Recommended quantity: {item.get('reorder_quantity', 'N/A')}",
                 'created_at': datetime.now().isoformat()
             })
-
             mail = mt.MailFromTemplate(
                 sender=mt.Address(email="hello@demomailtrap.co", name="Mailtrap Test"),
                 to=[mt.Address(email="ahamadsaadat9@gmail.com")],
                 template_uuid="4d98a5a6-e818-41f5-a9f3-01bdf94183fc",
                 template_variables={
+                "company_info_name": f"{item.get('part_name', item['part_id'])}"
                 }
             )
 
             client = mt.MailtrapClient(token="3b9be2cf27448dc9190be07c489e5e40")
             response = client.send(mail)
 
-            print(response)
+            print(response, "\n\n\n\n\nHELLLOOOOO\n\n\n")
 
         
         # Stockout risks
