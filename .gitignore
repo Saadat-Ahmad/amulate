@@ -6,6 +6,5 @@ dist/
 build/
 # environment variables
 .env
-.env.*
 .venv
 hugo_data_samples
