@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Send, Loader, Bot, User, Lightbulb, Package } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import './HugoAI.css';
 
 const EXAMPLE_QUESTIONS = [
@@ -116,14 +117,31 @@ function HugoAI() {
               </div>
               <div className="message-content">
                 <div className="message-text">
-                  {message.content.split('\n').map((line, i) => {
-                    if (line.startsWith('•')) {
-                      return <li key={i}>{line.replace('•', '').trim()}</li>;
-                    }
-                    return line ? <span key={i}>{line}<br/></span> : <br key={i}/>;
-                  })}
+                  {message.role === 'assistant' ? (
+                    <ReactMarkdown
+                      components={{
+                        p: ({node, ...props}) => <p {...props} />,
+                        ul: ({node, ...props}) => <ul {...props} />,
+                        ol: ({node, ...props}) => <ol {...props} />,
+                        li: ({node, ...props}) => <li {...props} />,
+                        strong: ({node, ...props}) => <strong {...props} />,
+                        em: ({node, ...props}) => <em {...props} />,
+                        h1: ({node, ...props}) => <h1 {...props} />,
+                        h2: ({node, ...props}) => <h2 {...props} />,
+                        h3: ({node, ...props}) => <h3 {...props} />,
+                        code: ({node, inline, ...props}) => 
+                          inline ? <code {...props} /> : <pre><code {...props} /></pre>,
+                        blockquote: ({node, ...props}) => <blockquote {...props} />,
+                        hr: ({node, ...props}) => <hr {...props} />,
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  ) : (
+                    <span>{message.content}</span>
+                  )}
                 </div>
-                {message.data && (
+                {message.data && Object.keys(message.data).length > 0 && (
                   <div className="message-data">
                     <details>
                       <summary>
