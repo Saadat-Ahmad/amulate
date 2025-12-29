@@ -1,0 +1,10 @@
+# dependencies
+node_modules/
+
+# build
+dist/
+build/
+# environment variables
+.env
+.env.*
+hugo_data_samples
