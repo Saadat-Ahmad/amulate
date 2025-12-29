@@ -1,55 +1,70 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Calendar, Package, DollarSign, Truck } from 'lucide-react';
+import { ShoppingCart, Calendar, Truck, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import './Orders.css';
 
-// Mock data - replace with API calls
-const mockOrders = [
-  {
-    id: 'PO-2024-001',
-    supplier: 'TechParts Ltd.',
-    date: '2024-12-28',
-    status: 'delivered',
-    items: 5,
-    total: 12500,
-    deliveryDate: '2024-12-30'
-  },
-  {
-    id: 'PO-2024-002',
-    supplier: 'Global Components',
-    date: '2024-12-27',
-    status: 'in_transit',
-    items: 3,
-    total: 8750,
-    deliveryDate: '2025-01-02'
-  },
-  {
-    id: 'PO-2024-003',
-    supplier: 'ElectroSupply Co.',
-    date: '2024-12-26',
-    status: 'pending',
-    items: 7,
-    total: 15300,
-    deliveryDate: '2025-01-05'
-  }
-];
-
 function Orders() {
-  const [orders] = useState(mockOrders);
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [orders, setOrders] = useState([
+    {
+      id: 'PO-2025-001',
+      supplier: 'TechParts Ltd.',
+      items: 12,
+      total: 45600,
+      status: 'delivered',
+      orderDate: '2025-01-15',
+      deliveryDate: '2025-01-22'
+    },
+    {
+      id: 'PO-2025-002',
+      supplier: 'Global Components',
+      items: 8,
+      total: 32400,
+      status: 'in_transit',
+      orderDate: '2025-01-18',
+      estimatedDelivery: '2025-02-05'
+    },
+    {
+      id: 'PO-2025-003',
+      supplier: 'ElectroSupply Co.',
+      items: 15,
+      total: 67890,
+      status: 'pending',
+      orderDate: '2025-01-20',
+      estimatedDelivery: '2025-02-10'
+    }
+  ]);
+
+  const [showNewOrderModal, setShowNewOrderModal] = useState(false);
 
   const getStatusInfo = (status) => {
-    const statuses = {
-      pending: { label: 'Pending', color: '#f59e0b', bg: '#fef3c7' },
-      in_transit: { label: 'In Transit', color: '#3b82f6', bg: '#dbeafe' },
-      delivered: { label: 'Delivered', color: '#10b981', bg: '#d1fae5' },
-      cancelled: { label: 'Cancelled', color: '#ef4444', bg: '#fee2e2' }
-    };
-    return statuses[status] || statuses.pending;
+    switch (status) {
+      case 'delivered':
+        return { label: 'Delivered', color: '#10b981', icon: CheckCircle };
+      case 'in_transit':
+        return { label: 'In Transit', color: '#3b82f6', icon: Truck };
+      case 'pending':
+        return { label: 'Pending', color: '#f59e0b', icon: Clock };
+      case 'cancelled':
+        return { label: 'Cancelled', color: '#ef4444', icon: XCircle };
+      default:
+        return { label: status, color: '#718096', icon: Clock };
+    }
   };
 
-  const filteredOrders = filterStatus === 'all'
-    ? orders
-    : orders.filter(o => o.status === filterStatus);
+  const handleViewDetails = (order) => {
+    toast.success(`Viewing details for ${order.id}`);
+    // Add modal or navigation logic here
+  };
+
+  const handleTrackOrder = (order) => {
+    toast.success(`Tracking ${order.id}`);
+    // Add tracking logic here
+  };
+
+  const handleNewOrder = () => {
+    setShowNewOrderModal(true);
+    toast.success('New order form opened');
+  };
 
   return (
     <div className="orders-page">
@@ -58,88 +73,49 @@ function Orders() {
           <ShoppingCart size={28} />
           Purchase Orders
         </h1>
-        <button className="btn btn-primary">
+        <button className="btn btn-primary" onClick={handleNewOrder}>
           <Plus size={20} />
           New Order
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid-4">
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#dbeafe' }}>
-            <ShoppingCart size={24} style={{ color: '#3b82f6' }} />
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Total Orders</p>
-            <h3 className="stat-value">{orders.length}</h3>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#fef3c7' }}>
-            <Package size={24} style={{ color: '#f59e0b' }} />
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Pending</p>
-            <h3 className="stat-value">{orders.filter(o => o.status === 'pending').length}</h3>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#dbeafe' }}>
-            <Truck size={24} style={{ color: '#3b82f6' }} />
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">In Transit</p>
-            <h3 className="stat-value">{orders.filter(o => o.status === 'in_transit').length}</h3>
-          </div>
-        </div>
-
-        <div className="stat-card">
+      <div className="orders-stats">
+        <div className="stat-card-small">
           <div className="stat-icon" style={{ background: '#dcfce7' }}>
-            <DollarSign size={24} style={{ color: '#10b981' }} />
+            <CheckCircle size={20} style={{ color: '#10b981' }} />
           </div>
-          <div className="stat-content">
-            <p className="stat-label">Total Value</p>
-            <h3 className="stat-value">${orders.reduce((sum, o) => sum + o.total, 0).toLocaleString()}</h3>
+          <div>
+            <p>Delivered</p>
+            <h3>{orders.filter(o => o.status === 'delivered').length}</h3>
+          </div>
+        </div>
+
+        <div className="stat-card-small">
+          <div className="stat-icon" style={{ background: '#dbeafe' }}>
+            <Truck size={20} style={{ color: '#3b82f6' }} />
+          </div>
+          <div>
+            <p>In Transit</p>
+            <h3>{orders.filter(o => o.status === 'in_transit').length}</h3>
+          </div>
+        </div>
+
+        <div className="stat-card-small">
+          <div className="stat-icon" style={{ background: '#fef3c7' }}>
+            <Clock size={20} style={{ color: '#f59e0b' }} />
+          </div>
+          <div>
+            <p>Pending</p>
+            <h3>{orders.filter(o => o.status === 'pending').length}</h3>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="orders-filters">
-        <button
-          className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
-          onClick={() => setFilterStatus('all')}
-        >
-          All Orders
-        </button>
-        <button
-          className={`filter-btn ${filterStatus === 'pending' ? 'active' : ''}`}
-          onClick={() => setFilterStatus('pending')}
-        >
-          Pending
-        </button>
-        <button
-          className={`filter-btn ${filterStatus === 'in_transit' ? 'active' : ''}`}
-          onClick={() => setFilterStatus('in_transit')}
-        >
-          In Transit
-        </button>
-        <button
-          className={`filter-btn ${filterStatus === 'delivered' ? 'active' : ''}`}
-          onClick={() => setFilterStatus('delivered')}
-        >
-          Delivered
-        </button>
-      </div>
-
-      {/* Orders List */}
       <div className="orders-list">
-        {filteredOrders.map((order) => {
+        {orders.map((order) => {
           const status = getStatusInfo(order.status);
-          
+          const StatusIcon = status.icon;
+
           return (
             <div key={order.id} className="order-card">
               <div className="order-header">
@@ -147,10 +123,8 @@ function Orders() {
                   <h3>{order.id}</h3>
                   <p className="supplier-name">{order.supplier}</p>
                 </div>
-                <span
-                  className="status-badge"
-                  style={{ background: status.bg, color: status.color }}
-                >
+                <span className="status-badge-lg" style={{ color: status.color }}>
+                  <StatusIcon size={18} />
                   {status.label}
                 </span>
               </div>
@@ -158,40 +132,32 @@ function Orders() {
               <div className="order-details">
                 <div className="detail-item">
                   <Calendar size={16} />
-                  <div>
-                    <span className="detail-label">Order Date</span>
-                    <span className="detail-value">{new Date(order.date).toLocaleDateString()}</span>
-                  </div>
+                  <span>Ordered: {order.orderDate}</span>
                 </div>
-
-                <div className="detail-item">
-                  <Package size={16} />
-                  <div>
-                    <span className="detail-label">Items</span>
-                    <span className="detail-value">{order.items} parts</span>
-                  </div>
-                </div>
-
-                <div className="detail-item">
-                  <DollarSign size={16} />
-                  <div>
-                    <span className="detail-label">Total</span>
-                    <span className="detail-value">${order.total.toLocaleString()}</span>
-                  </div>
-                </div>
-
                 <div className="detail-item">
                   <Truck size={16} />
-                  <div>
-                    <span className="detail-label">Delivery</span>
-                    <span className="detail-value">{new Date(order.deliveryDate).toLocaleDateString()}</span>
-                  </div>
+                  <span>
+                    {order.deliveryDate ? `Delivered: ${order.deliveryDate}` : `ETA: ${order.estimatedDelivery}`}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <ShoppingCart size={16} />
+                  <span>{order.items} items</span>
                 </div>
               </div>
 
-              <div className="order-actions">
-                <button className="btn-sm">View Details</button>
-                <button className="btn-sm btn-primary">Track Order</button>
+              <div className="order-footer">
+                <div className="order-total">${order.total.toLocaleString()}</div>
+                <div className="order-actions">
+                  <button className="btn-secondary" onClick={() => handleViewDetails(order)}>
+                    View Details
+                  </button>
+                  {order.status === 'in_transit' && (
+                    <button className="btn btn-primary" onClick={() => handleTrackOrder(order)}>
+                      Track Order
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );

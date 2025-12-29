@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Map, MapPin, Truck, Package } from 'lucide-react';
+import { Map, MapPin, Truck, Package, Navigation } from 'lucide-react';
+import toast from 'react-hot-toast';
 import './MapView.css';
 
 function MapView() {
@@ -8,55 +9,72 @@ function MapView() {
       id: 1,
       name: 'TechParts Ltd.',
       location: 'Shenzhen, China',
-      lat: 22.5431,
-      lng: 114.0579,
+      orders: 145,
       status: 'active',
-      orders: 145
+      position: { left: '75%', top: '45%' }
     },
     {
       id: 2,
       name: 'Global Components',
       location: 'Mumbai, India',
-      lat: 19.0760,
-      lng: 72.8777,
+      orders: 98,
       status: 'active',
-      orders: 98
+      position: { left: '68%', top: '52%' }
     },
     {
       id: 3,
       name: 'ElectroSupply Co.',
       location: 'Tokyo, Japan',
-      lat: 35.6762,
-      lng: 139.6503,
+      orders: 203,
       status: 'active',
-      orders: 203
-    },
-    {
-      id: 4,
-      name: 'EuroParts GmbH',
-      location: 'Munich, Germany',
-      lat: 48.1351,
-      lng: 11.5820,
-      status: 'pending',
-      orders: 67
-    },
-    {
-      id: 5,
-      name: 'Americas Supply',
-      location: 'San Francisco, USA',
-      lat: 37.7749,
-      lng: -122.4194,
-      status: 'active',
-      orders: 156
+      position: { left: '85%', top: '42%' }
     }
   ]);
 
   const [selectedSupplier, setSelectedSupplier] = useState(null);
+
   const [shipments, setShipments] = useState([
-    { from: 'Shenzhen', to: 'Mumbai', status: 'in_transit', eta: '2025-01-05' },
-    { from: 'Tokyo', to: 'Mumbai', status: 'in_transit', eta: '2025-01-03' },
-    { from: 'Munich', to: 'Mumbai', status: 'pending', eta: '2025-01-10' }
+    { 
+      id: 1,
+      from: 'Shenzhen',
+      to: 'Mumbai',
+      status: 'in_transit',
+      eta: '2025-01-05',
+      items: 45
+    },
+    {
+      id: 2,
+      from: 'Tokyo',
+      to: 'Mumbai',
+      status: 'in_transit',
+      eta: '2025-01-03',
+      items: 32
+    },
+    {
+      id: 3,
+      from: 'Shenzhen',
+      to: 'Delhi',
+      status: 'pending',
+      eta: '2025-01-10',
+      items: 28
+    }
   ]);
+
+  const handleSupplierClick = (supplier) => {
+    setSelectedSupplier(supplier);
+    toast.success(`Selected ${supplier.name}`);
+  };
+
+  const handleTrackShipment = (shipment) => {
+    toast.success(`Tracking shipment from ${shipment.from} to ${shipment.to}`);
+  };
+
+  const handleViewFullProfile = () => {
+    if (selectedSupplier) {
+      toast.success(`Opening full profile for ${selectedSupplier.name}`);
+      // Navigate to supplier detail page
+    }
+  };
 
   return (
     <div className="map-page">
@@ -68,41 +86,43 @@ function MapView() {
         <div className="map-legend">
           <span className="legend-item">
             <span className="legend-dot active"></span>
-            Active Suppliers
-          </span>
-          <span className="legend-item">
-            <span className="legend-dot pending"></span>
-            Pending Orders
+            Active Suppliers ({suppliers.length})
           </span>
           <span className="legend-item">
             <span className="legend-dot transit"></span>
-            In Transit
+            In Transit ({shipments.filter(s => s.status === 'in_transit').length})
+          </span>
+          <span className="legend-item">
+            <span className="legend-dot pending"></span>
+            Pending ({shipments.filter(s => s.status === 'pending').length})
           </span>
         </div>
       </div>
 
       <div className="map-container-wrapper">
         <div className="map-view">
-          {/* Simplified 2D Map - Replace with react-globe.gl for 3D */}
-          <div className="map-placeholder">
-            <div className="map-background">
-              {/* Supplier markers */}
-              {suppliers.map((supplier, index) => (
+          <div className="map-canvas">
+            {/* World Map Background */}
+            <div className="world-map">
+              {/* Supplier Markers */}
+              {suppliers.map((supplier) => (
                 <div
                   key={supplier.id}
-                  className={`supplier-marker ${supplier.status}`}
-                  style={{
-                    left: `${20 + index * 15}%`,
-                    top: `${30 + (index % 3) * 20}%`
-                  }}
-                  onClick={() => setSelectedSupplier(supplier)}
+                  className={`supplier-marker ${supplier.status} ${selectedSupplier?.id === supplier.id ? 'selected' : ''}`}
+                  style={supplier.position}
+                  onClick={() => handleSupplierClick(supplier)}
                 >
-                  <MapPin size={24} />
-                  <span className="marker-label">{supplier.name}</span>
+                  <div className="marker-pulse"></div>
+                  <MapPin size={28} />
+                  <div className="marker-tooltip">
+                    <strong>{supplier.name}</strong>
+                    <span>{supplier.location}</span>
+                    <span className="orders-badge">{supplier.orders} orders</span>
+                  </div>
                 </div>
               ))}
 
-              {/* Shipment routes */}
+              {/* Shipment Routes */}
               <svg className="routes-svg">
                 <defs>
                   <marker
@@ -116,54 +136,62 @@ function MapView() {
                     <polygon points="0 0, 10 3, 0 6" fill="#667eea" />
                   </marker>
                 </defs>
-                <line
-                  x1="20%"
-                  y1="30%"
-                  x2="35%"
-                  y2="50%"
+                
+                {/* Route 1: Shenzhen to Mumbai */}
+                <path
+                  d="M 75% 45% Q 70% 48% 68% 52%"
                   stroke="#667eea"
-                  strokeWidth="2"
-                  strokeDasharray="5,5"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeDasharray="10,5"
                   markerEnd="url(#arrowhead)"
-                  className="route-line"
+                  className="route-line animated"
                 />
-                <line
-                  x1="50%"
-                  y1="30%"
-                  x2="35%"
-                  y2="50%"
+                
+                {/* Route 2: Tokyo to Mumbai */}
+                <path
+                  d="M 85% 42% Q 75% 47% 68% 52%"
                   stroke="#10b981"
-                  strokeWidth="2"
-                  strokeDasharray="5,5"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeDasharray="10,5"
                   markerEnd="url(#arrowhead)"
-                  className="route-line"
+                  className="route-line animated"
                 />
               </svg>
-            </div>
 
-            <div className="map-info-overlay">
-              <Package size={48} />
-              <h3>Interactive Supply Chain Map</h3>
-              <p>Track your suppliers and shipments in real-time</p>
-              <small>For full 3D globe visualization, integrate react-globe.gl</small>
+              {/* Hub Location (Your warehouse) */}
+              <div className="hub-marker" style={{ left: '68%', top: '52%' }}>
+                <div className="hub-pulse"></div>
+                <Package size={32} />
+                <div className="hub-label">Your Warehouse<br/>Mumbai, India</div>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="map-sidebar">
-          {/* Supplier Details */}
+          {/* Supplier Details or List */}
           {selectedSupplier ? (
             <div className="supplier-details">
-              <h3>Supplier Details</h3>
+              <div className="details-header">
+                <h3>Supplier Details</h3>
+                <button className="close-btn" onClick={() => setSelectedSupplier(null)}>×</button>
+              </div>
+              
               <div className="detail-card">
+                <div className="detail-avatar">
+                  {selectedSupplier.name.charAt(0)}
+                </div>
                 <h4>{selectedSupplier.name}</h4>
+                
                 <div className="detail-row">
                   <MapPin size={16} />
                   <span>{selectedSupplier.location}</span>
                 </div>
                 <div className="detail-row">
                   <Package size={16} />
-                  <span>{selectedSupplier.orders} orders</span>
+                  <span>{selectedSupplier.orders} total orders</span>
                 </div>
                 <div className="detail-row">
                   <Truck size={16} />
@@ -171,9 +199,15 @@ function MapView() {
                     {selectedSupplier.status}
                   </span>
                 </div>
-                <button className="btn btn-primary" style={{ marginTop: '1rem', width: '100%' }}>
-                  View Full Profile
-                </button>
+                
+                <div className="detail-actions">
+                  <button className="btn btn-primary full-width" onClick={handleViewFullProfile}>
+                    View Full Profile
+                  </button>
+                  <button className="btn-secondary full-width">
+                    Create New Order
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -183,7 +217,7 @@ function MapView() {
                 <div
                   key={supplier.id}
                   className="supplier-item"
-                  onClick={() => setSelectedSupplier(supplier)}
+                  onClick={() => handleSupplierClick(supplier)}
                 >
                   <div className={`status-dot ${supplier.status}`}></div>
                   <div className="supplier-item-info">
@@ -202,12 +236,15 @@ function MapView() {
               <Truck size={20} />
               Active Shipments ({shipments.length})
             </h3>
-            {shipments.map((shipment, index) => (
-              <div key={index} className="shipment-item">
+            {shipments.map((shipment) => (
+              <div key={shipment.id} className="shipment-item">
                 <div className="shipment-route">
                   <span>{shipment.from}</span>
-                  <div className="route-arrow">→</div>
+                  <Navigation size={14} className="route-arrow" />
                   <span>{shipment.to}</span>
+                </div>
+                <div className="shipment-details">
+                  <span className="items-count">{shipment.items} items</span>
                 </div>
                 <div className="shipment-meta">
                   <span className={`status-badge ${shipment.status}`}>
@@ -215,6 +252,12 @@ function MapView() {
                   </span>
                   <span className="eta">ETA: {shipment.eta}</span>
                 </div>
+                <button 
+                  className="track-btn"
+                  onClick={() => handleTrackShipment(shipment)}
+                >
+                  Track →
+                </button>
               </div>
             ))}
           </div>
