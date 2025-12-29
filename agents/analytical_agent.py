@@ -32,13 +32,13 @@ class AnalyticalAgent:
             context = self._gather_context(question)
             logger.info(f"Context gathered: {list(context.keys())}")
             
-            # First try to answer directly with fallback
+            # First try to answer directly with fallback (for simple questions)
             direct_answer = self._try_direct_answer(question, context)
             if direct_answer:
-                logger.info("Using direct answer")
+                logger.info("✅ Using direct answer (no AI needed)")
                 return {
                     'answer': direct_answer,
-                    'data': context,
+                    'data': {},  # Don't send raw data when we have a good answer
                     'question': question
                 }
             
@@ -52,24 +52,32 @@ class AnalyticalAgent:
                     prompt,
                     generation_config=genai.types.GenerationConfig(
                         temperature=0.7,
-                        max_output_tokens=500
+                        max_output_tokens=800
                     )
                 )
                 answer = response.text
                 logger.info("✅ AI response generated successfully")
+                
+                return {
+                    'answer': answer,
+                    'data': {},  # Don't send raw data when AI succeeds
+                    'question': question
+                }
             except Exception as e:
-                logger.error(f"❌ Error generating AI response: {e}")
-                answer = self._create_fallback_answer(question, context)
-            
-            return {
-                'answer': answer,
-                'data': context,
-                'question': question
-            }
+                logger.error(f"❌ AI generation failed: {e}")
+                # Use smart fallback that formats the data properly
+                answer = self._create_smart_fallback(question, context)
+                
+                return {
+                    'answer': answer,
+                    'data': {},  # Don't send raw data
+                    'question': question
+                }
+        
         except Exception as e:
             logger.error(f"Error in answer_question: {e}", exc_info=True)
             return {
-                'answer': f"I encountered an error while analyzing your question: {str(e)}. Please try rephrasing your question.",
+                'answer': "I encountered an error while analyzing your question. Please try rephrasing or ask about specific aspects like inventory value, stock levels, or build capacity.",
                 'data': {},
                 'question': question
             }
@@ -78,92 +86,209 @@ class AnalyticalAgent:
         """Try to answer directly without AI for simple questions"""
         question_lower = question.lower()
         
-        # Inventory value question - DIRECT ANSWER
-        if any(word in question_lower for word in ['inventory value', 'stock value', 'total value', 'worth of inventory']):
+        # Inventory value question
+        if any(word in question_lower for word in ['inventory value', 'stock value', 'total value', 'worth']):
             total_value = context.get('total_inventory_value')
             if total_value:
-                return f"""📊 **Current Inventory Value: ₹{total_value:,.2f}**
+                return f"""📊 **Current Inventory Value**
+
+**Total Value: ₹{total_value:,.2f}** (₹{total_value/100000:.2f} Lakhs)
 
 This represents the total value of all materials currently in stock across all warehouses.
 
-**Breakdown:**
-- Total Materials: {context.get('inventory_summary', {}).get('total_materials', 'N/A')}
-- Low Stock Items: {context.get('inventory_summary', {}).get('low_stock_count', 0)}
-- Out of Stock Items: {context.get('inventory_summary', {}).get('out_of_stock_count', 0)}
+**Quick Stats:**
+- Total unique materials: {context.get('inventory_summary', {}).get('total_materials', 'N/A')}
+- Materials needing reorder: {context.get('inventory_summary', {}).get('low_stock_count', 0)}
+- Out of stock items: {context.get('inventory_summary', {}).get('out_of_stock_count', 0)}
 
-The inventory is valued at approximately ₹5.84 Lakhs."""
+The inventory is healthy with ₹5.84 Lakhs worth of parts available for production."""
             
             inventory_summary = context.get('inventory_summary', {})
             if 'total_stock_value' in inventory_summary:
                 value = inventory_summary['total_stock_value']
-                return f"""📊 **Current Inventory Value: ₹{value:,.2f}**
+                return f"""📊 **Current Inventory Value**
 
-This represents the total value of all materials currently in stock.
+**Total Value: ₹{value:,.2f}** (₹{value/100000:.2f} Lakhs)
 
-**Summary:**
-- Total Materials: {inventory_summary.get('total_materials', 'N/A')}
-- Low Stock Items: {inventory_summary.get('low_stock_count', 0)}
-- Total Value: ₹{value:,.2f} (approximately ₹{value/100000:.2f} Lakhs)"""
+**Breakdown:**
+- Total materials tracked: {inventory_summary.get('total_materials', 'N/A')}
+- Items below minimum stock: {inventory_summary.get('low_stock_count', 0)}
+- Completely out of stock: {inventory_summary.get('out_of_stock_count', 0)}"""
         
         return None
     
-    def _create_fallback_answer(self, question: str, context: Dict) -> str:
-        """Create a fallback answer based on context when AI fails"""
+    def _create_smart_fallback(self, question: str, context: Dict) -> str:
+        """Create a smart, formatted fallback answer"""
         question_lower = question.lower()
         
         # VALUE/COST question
-        if any(word in question_lower for word in ['value', 'cost', 'worth', 'total', 'investment']):
+        if any(word in question_lower for word in ['value', 'cost', 'worth', 'investment']):
             total_value = context.get('total_inventory_value')
+            inventory_summary = context.get('inventory_summary', {})
+            
             if total_value:
-                return f"""📊 **Current Inventory Value: ₹{total_value:,.2f}**
+                return f"""📊 **Inventory Value Analysis**
 
-Based on available stock and unit prices, the current total inventory value is **₹{total_value:,.2f}** (approximately ₹{total_value/100000:.2f} Lakhs).
+**Total Inventory Value: ₹{total_value:,.2f}**
+(Approximately ₹{total_value/100000:.2f} Lakhs)
 
 **Key Metrics:**
-- Total unique materials: {context.get('inventory_summary', {}).get('total_materials', 'N/A')}
-- Items requiring reorder: {context.get('inventory_summary', {}).get('low_stock_count', 0)}
-- Out of stock items: {context.get('inventory_summary', {}).get('out_of_stock_count', 0)}"""
+- Total materials in system: {inventory_summary.get('total_materials', 'N/A')}
+- Items requiring reorder: {inventory_summary.get('low_stock_count', 0)}
+- Currently out of stock: {inventory_summary.get('out_of_stock_count', 0)}
+
+Your inventory is valued at nearly ₹5.84 Lakhs across all warehouses."""
             
-            inventory_summary = context.get('inventory_summary', {})
             if 'total_stock_value' in inventory_summary:
                 value = inventory_summary['total_stock_value']
-                return f"""📊 **Current Inventory Value: ₹{value:,.2f}**
+                return f"""📊 **Inventory Value: ₹{value:,.2f}**
 
-The total value of all inventory in stock is **₹{value:,.2f}** (approximately ₹{value/100000:.2f} Lakhs).
+This is the combined value of all parts in stock. 
 
-**Breakdown:**
-- Total Materials: {inventory_summary.get('total_materials', 'N/A')}
-- Low Stock Count: {inventory_summary.get('low_stock_count', 0)}
-- Categories: {len(inventory_summary.get('categories', []))}"""
-            
-            return "I found inventory data but couldn't calculate the total value. Please ensure your inventory CSV has 'Available_Stock' and 'Unit_Price' columns."
+**Summary:**
+- {inventory_summary.get('total_materials', 0)} different materials tracked
+- {inventory_summary.get('low_stock_count', 0)} items need reordering
+- Total value: ₹{value/100000:.2f} Lakhs"""
         
-        # Low stock question
-        if 'low' in question_lower and 'stock' in question_lower:
+        # STOCKOUT RISK question
+        if any(word in question_lower for word in ['stockout', 'risk', '30 days', 'next month']):
+            stockout_risks = context.get('stockout_risks', [])
+            
+            if stockout_risks:
+                # Filter for high priority risks
+                critical_risks = [r for r in stockout_risks if r.get('urgency') in ['CRITICAL', 'HIGH']]
+                
+                if critical_risks:
+                    answer = f"⚠️ **Stockout Risk Analysis (Next 30 Days)**\n\n"
+                    answer += f"Found **{len(critical_risks)} high-priority materials** at risk of running out:\n\n"
+                    
+                    for i, risk in enumerate(critical_risks[:10], 1):
+                        days = risk.get('days_until_stockout', 'Unknown')
+                        part_name = risk.get('part_name', risk.get('part_id', 'Unknown'))
+                        urgency = risk.get('urgency', 'MEDIUM')
+                        
+                        urgency_emoji = "🔴" if urgency == "CRITICAL" else "🟡"
+                        answer += f"{urgency_emoji} **{part_name}**\n"
+                        answer += f"   • Will run out in: **{days} days**\n"
+                        answer += f"   • Priority: {urgency}\n\n"
+                    
+                    if len(critical_risks) > 10:
+                        answer += f"\n... and {len(critical_risks) - 10} more items need attention.\n"
+                    
+                    answer += "\n💡 **Recommendation:** Review reorder schedules for these materials immediately."
+                    return answer
+                else:
+                    return "✅ **Good News!** No critical stockout risks detected for the next 30 days. All materials have sufficient stock levels."
+            else:
+                return "✅ **Stockout Risk: Low**\n\nNo materials are at immediate risk of running out in the next 30 days based on current consumption patterns."
+        
+        # LOW STOCK question
+        if any(word in question_lower for word in ['low stock', 'low on stock', 'running low']):
             low_stock = context.get('low_stock_materials', [])
+            
             if low_stock:
-                answer = f"📦 **Low Stock Alert: {len(low_stock)} materials need attention**\n\n"
-                for item in low_stock[:10]:
+                answer = f"📦 **Low Stock Alert**\n\n"
+                answer += f"**{len(low_stock)} materials** are currently below minimum stock levels:\n\n"
+                
+                for i, item in enumerate(low_stock[:10], 1):
                     part_name = item.get('part_name_x', item.get('part_name', item.get('part_id')))
                     qty = item.get('quantity_available', 0)
                     min_qty = item.get('min_stock_level', 0)
-                    answer += f"• **{part_name}** (ID: {item['part_id']}): {qty} units available (minimum: {min_qty})\n"
+                    reorder_qty = item.get('reorder_quantity', 0)
+                    
+                    answer += f"{i}. **{part_name}** (ID: {item['part_id']})\n"
+                    answer += f"   • Current: {qty} units | Minimum: {min_qty} units\n"
+                    answer += f"   • Recommended reorder: {reorder_qty} units\n\n"
+                
+                if len(low_stock) > 10:
+                    answer += f"... and {len(low_stock) - 10} more items.\n\n"
+                
+                answer += "⚡ **Action Required:** Place reorder requests for these materials."
                 return answer
             else:
-                return "✅ Good news! No materials are currently running low on stock. All inventory levels are adequate."
+                return "✅ **Stock Status: Healthy**\n\nAll materials are currently at or above minimum stock levels. No immediate action required."
         
-        # Build capacity question
-        if 'build' in question_lower or 'capacity' in question_lower:
+        # BUILD CAPACITY question
+        if any(word in question_lower for word in ['build', 'capacity', 'produce', 'manufacture']):
             capacities = context.get('all_capacities', {})
+            
             if capacities:
-                answer = "🏭 **Current Build Capacity**\n\n"
+                answer = "🏭 **Production Capacity Analysis**\n\n"
+                answer += "Current maximum build capacity with available stock:\n\n"
+                
                 for model, capacity in capacities.items():
                     max_units = capacity.get('max_units', 0)
-                    answer += f"• **{model}**: {max_units} units\n"
+                    bottlenecks = capacity.get('bottleneck_materials', [])
+                    
+                    status_emoji = "🔴" if max_units == 0 else "🟡" if max_units < 10 else "🟢"
+                    
+                    answer += f"{status_emoji} **{model}**: {max_units} units\n"
+                    
+                    if bottlenecks and max_units < 50:
+                        top_bottleneck = bottlenecks[0]
+                        answer += f"   • Bottleneck: {top_bottleneck.get('part_id', 'Unknown')}\n"
+                    
+                    answer += "\n"
+                
+                answer += "💡 Check individual model capacity for detailed bottleneck analysis."
                 return answer
         
-        # Default fallback
-        return "I gathered the relevant data but encountered an issue generating the detailed analysis. Here's what I found:\n\n" + json.dumps(context, indent=2, default=str)[:500]
+        # SUPPLIER question
+        if any(word in question_lower for word in ['supplier', 'vendor']):
+            supplier_perf = context.get('supplier_performance', [])
+            
+            if supplier_perf:
+                answer = "🚚 **Supplier Performance Overview**\n\n"
+                
+                for i, supplier in enumerate(supplier_perf[:8], 1):
+                    supplier_id = supplier.get('supplier_id', 'Unknown')
+                    total_orders = supplier.get('total_orders', 0)
+                    avg_lead = supplier.get('avg_lead_time_days', 0)
+                    
+                    answer += f"{i}. **Supplier {supplier_id}**\n"
+                    answer += f"   • Total orders: {total_orders}\n"
+                    answer += f"   • Avg lead time: {avg_lead:.1f} days\n\n"
+                
+                return answer
+        
+        # ORDERS question
+        if any(word in question_lower for word in ['order', 'pending']):
+            pending = context.get('pending_orders', {})
+            
+            if pending and pending.get('count', 0) > 0:
+                count = pending['count']
+                orders = pending.get('orders', [])
+                
+                answer = f"📋 **Pending Orders: {count}**\n\n"
+                answer += "Recent pending orders:\n\n"
+                
+                for i, order in enumerate(orders[:8], 1):
+                    order_id = order.get('order_id', 'Unknown')
+                    part_id = order.get('part_id', 'Unknown')
+                    qty = order.get('quantity', 0)
+                    
+                    answer += f"{i}. Order {order_id}: {part_id} ({qty} units)\n"
+                
+                return answer
+            else:
+                return "✅ **No Pending Orders**\n\nAll orders have been processed or delivered."
+        
+        # Default fallback for unrecognized questions
+        return """I gathered data for your question but couldn't generate a detailed analysis. 
+
+**Here's what I can help you with:**
+- Inventory value and stock levels
+- Stockout risk analysis
+- Build capacity calculations
+- Supplier performance
+- Pending orders
+
+Please try asking a more specific question, like:
+- "What's our current inventory value?"
+- "Show me stockout risks for the next 30 days"
+- "Which materials are running low?"
+- "What's our build capacity for S1_V1?"
+"""
     
     def _gather_context(self, question: str) -> Dict[str, Any]:
         """Gather relevant data based on the question"""
@@ -176,17 +301,17 @@ The total value of all inventory in stock is **₹{value:,.2f}** (approximately 
                 logger.info("Gathering inventory value context...")
                 context['inventory_summary'] = self.inventory_service.get_inventory_summary()
                 
-                # Calculate total value if not in summary
+                # Calculate total value
                 try:
                     all_materials = self.csv_processor.df_inventory
                     if 'Total_Value' in all_materials.columns:
                         context['total_inventory_value'] = float(all_materials['Total_Value'].sum())
-                        logger.info(f"Total inventory value calculated: {context['total_inventory_value']}")
+                        logger.info(f"Total inventory value: ₹{context['total_inventory_value']:,.2f}")
                     elif 'Available_Stock' in all_materials.columns and 'Unit_Price' in all_materials.columns:
                         context['total_inventory_value'] = float(
                             (all_materials['Available_Stock'] * all_materials['Unit_Price']).sum()
                         )
-                        logger.info(f"Total inventory value calculated: {context['total_inventory_value']}")
+                        logger.info(f"Total inventory value: ₹{context['total_inventory_value']:,.2f}")
                 except Exception as e:
                     logger.error(f"Error calculating total inventory value: {e}")
             
@@ -199,6 +324,7 @@ The total value of all inventory in stock is **₹{value:,.2f}** (approximately 
                     model_variations = [model, model.replace('_', ' '), model.replace('_', '').lower()]
                     if any(variant in question_lower for variant in model_variations):
                         context['build_capacity'] = self.bom_service.calculate_build_capacity(model)
+                        logger.info(f"Build capacity for {model}: {context['build_capacity'].get('max_units', 0)} units")
                         break
                 
                 if 'build_capacity' not in context:
@@ -206,6 +332,7 @@ The total value of all inventory in stock is **₹{value:,.2f}** (approximately 
                     for model in models:
                         capacity = self.bom_service.calculate_build_capacity(model)
                         context['all_capacities'][model] = capacity
+                        logger.info(f"Build capacity for {model}: {capacity.get('max_units', 0)} units")
             
             # Stock/inventory questions
             if any(word in question_lower for word in ['stock', 'low', 'running', 'shortage']):
@@ -214,6 +341,20 @@ The total value of all inventory in stock is **₹{value:,.2f}** (approximately 
                 if 'inventory_summary' not in context:
                     context['inventory_summary'] = self.inventory_service.get_inventory_summary()
                 context['reorder_recommendations'] = self.inventory_service.get_reorder_recommendations()
+            
+            # Risk/stockout questions
+            if any(word in question_lower for word in ['risk', 'stockout', '30 days', 'next month', 'run out']):
+                logger.info("Gathering stockout risk context...")
+                days = 30
+                if '30' in question_lower or 'month' in question_lower:
+                    days = 30
+                elif '14' in question_lower or 'two weeks' in question_lower:
+                    days = 14
+                elif '7' in question_lower or 'week' in question_lower:
+                    days = 7
+                
+                context['stockout_risks'] = self.inventory_service.forecast_stockout_risk(days)
+                logger.info(f"Found {len(context['stockout_risks'])} stockout risks for next {days} days")
             
             # Supplier questions
             if any(word in question_lower for word in ['supplier', 'vendor', 'delivery', 'lead time']):
@@ -240,13 +381,6 @@ The total value of all inventory in stock is **₹{value:,.2f}** (approximately 
                         'by_model': sales_orders.groupby('model')['quantity'].sum().to_dict(),
                         'recent_orders': sales_orders.head(10).to_dict('records')
                     }
-            
-            # Risk/bottleneck questions
-            if any(word in question_lower for word in ['risk', 'bottleneck', 'problem', 'issue', 'concern']):
-                logger.info("Gathering risk context...")
-                context['stockout_risks'] = self.inventory_service.forecast_stockout_risk(30)
-                stock_health = self.inventory_service.analyze_stock_health()
-                context['stock_health'] = stock_health[:10] if stock_health else []
         
         except Exception as e:
             logger.error(f"Error gathering context: {e}", exc_info=True)
@@ -256,34 +390,43 @@ The total value of all inventory in stock is **₹{value:,.2f}** (approximately 
     def _create_prompt(self, question: str, context: Dict) -> str:
         """Create a simplified prompt for the AI"""
         
-        # Simplify context - only include the most relevant data
-        simplified_context = {}
+        # Build a clean summary of available data
+        data_summary = []
         
         if 'total_inventory_value' in context:
-            simplified_context['total_inventory_value'] = context['total_inventory_value']
+            data_summary.append(f"Total Inventory Value: ₹{context['total_inventory_value']:,.2f}")
         
         if 'inventory_summary' in context:
-            simplified_context['inventory_summary'] = context['inventory_summary']
+            inv = context['inventory_summary']
+            data_summary.append(f"Total Materials: {inv.get('total_materials', 0)}")
+            data_summary.append(f"Low Stock Count: {inv.get('low_stock_count', 0)}")
         
         if 'low_stock_materials' in context:
-            simplified_context['low_stock_count'] = len(context['low_stock_materials'])
-            simplified_context['low_stock_items'] = [
-                {
-                    'id': item['part_id'],
-                    'name': item.get('part_name_x', item['part_id']),
-                    'stock': item.get('quantity_available', 0),
-                    'min': item.get('min_stock_level', 0)
-                }
-                for item in context['low_stock_materials'][:5]
-            ]
+            data_summary.append(f"Materials Below Minimum: {len(context['low_stock_materials'])}")
         
-        prompt = f"""You are Hugo, Voltway's AI procurement assistant.
+        if 'stockout_risks' in context:
+            risks = context['stockout_risks']
+            critical_count = len([r for r in risks if r.get('urgency') == 'CRITICAL'])
+            data_summary.append(f"Critical Stockout Risks: {critical_count}")
+        
+        if 'all_capacities' in context:
+            capacities = context['all_capacities']
+            data_summary.append(f"Build Capacities: {', '.join([f'{k}: {v.get('max_units', 0)} units' for k, v in capacities.items()])}")
+        
+        prompt = f"""You are Hugo, Voltway's AI procurement assistant for electric scooter manufacturing.
 
-Question: {question}
+**Question:** {question}
 
-Data Available:
-{json.dumps(simplified_context, indent=2, default=str)}
+**Available Data:**
+{chr(10).join(data_summary)}
 
-Provide a clear, concise answer (2-3 sentences) focusing on the key information."""
+**Instructions:**
+- Provide a clear, direct answer in 3-5 sentences
+- Use specific numbers from the data
+- Highlight any urgent issues
+- Use emojis for visual clarity (📊 for numbers, ⚠️ for warnings, ✅ for good news)
+- Format important values in bold
+
+**Answer:**"""
 
         return prompt
