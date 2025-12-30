@@ -214,6 +214,12 @@ npm start
 * Clean backend orchestration
 
 ---
+## 🎥 Demo Video
+
+Watch the full demo of **Hugo AI – Procurement Agent** here:  
+👉 https://youtu.be/F5ZK8pNM1TY
+
+---
 
 ## **System Architecture**
 ![alt text](https://github.com/Saadat-Ahmad/amulate/blob/main/public/architecture.png?raw=true)
