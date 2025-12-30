@@ -215,8 +215,10 @@ npm start
 
 ---
 
-## **Authors**
+## **System Architecture**
+![alt text](https://github.com/Saadat-Ahmad/amulate/blob/main/public/architecture.png?raw=true)
 
+## **Authors**
 * **Saadat Ahmad**
   [https://github.com/Saadat-Ahmad](https://github.com/Saadat-Ahmad)
 
